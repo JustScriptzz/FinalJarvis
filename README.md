@@ -15,13 +15,16 @@ pipeline and the messaging channels (see [Roadmap](#roadmap)).
 
 ## Quick look
 
+One command. Installs whatever is missing (uv, Ollama, the backend, the speech
+engines, ~5 GB of models on first run), then serves the HUD and opens it:
+
 ```bash
-./scripts/install.sh      # uv, Ollama, venv, engines, ~5 GB of models — one command
-make serve-open           # http://127.0.0.1:8080
+make start                # http://127.0.0.1:8080
 ```
 
-Windows: `powershell -ExecutionPolicy Bypass -File scripts\install.ps1`, then
-`scripts\start.ps1` (see [docs/windows.md](docs/windows.md)).
+Windows: `powershell -ExecutionPolicy Bypass -File scripts\start.ps1` — same
+behavior (see [docs/windows.md](docs/windows.md)). Re-runs are fast: the
+installer verifies what exists instead of downloading again.
 
 On first boot the interface asks you to choose a **language core** and a
 **voice core** explicitly — local or cloud, no defaults.
@@ -173,21 +176,18 @@ jarvis/
 
 ## Quickstart
 
-One command installs everything — uv, Ollama, the backend environment, the
-speech engines and the ~5 GB of model weights:
+One command — installs everything (uv, Ollama, the backend environment, the
+speech engines, ~5 GB of model weights on first run), then serves the HUD and
+opens it:
 
 ```bash
 git clone https://github.com/JustScriptzz/FinalJarvis.git
 cd FinalJarvis
-./scripts/install.sh        # Windows: powershell -ExecutionPolicy Bypass -File scripts\install.ps1
+make start                  # Windows: powershell -ExecutionPolicy Bypass -File scripts\start.ps1
 ```
 
-It is idempotent (re-running verifies instead of downloading), and
-`./scripts/install.sh --skip-models` installs the code only. Then:
-
-```bash
-make serve-open             # http://127.0.0.1:8080
-```
+Re-runs verify instead of downloading again. `./scripts/install.sh
+--skip-models` installs the code only.
 
 The numbered steps below are the same install spelled out by hand, for when you
 want to see or change each piece. For Windows specifics see

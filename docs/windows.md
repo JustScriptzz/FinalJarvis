@@ -12,14 +12,17 @@ equivalents. It is written for Windows 10/11 64-bit.
 
 ## One command
 
-Everything on this page is folded into a single installer:
+Everything on this page is folded into a single command:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\install.ps1
+powershell -ExecutionPolicy Bypass -File scripts\start.ps1
 ```
 
-It is idempotent, and `-SkipModels` installs the code only. The sections below
-are the same steps spelled out by hand, plus the parts that remain manual.
+First run bootstraps whatever is missing (uv, Ollama, packages, the ~5 GB of
+model downloads), then serves the HUD and opens the browser; later runs go
+straight to serving. `scripts\install.ps1` is the installer on its own
+(idempotent, `-SkipModels` for code only). The sections below are the same
+steps spelled out by hand, plus the parts that remain manual.
 
 ## What you need
 
