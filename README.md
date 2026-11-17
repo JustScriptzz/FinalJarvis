@@ -15,14 +15,25 @@ pipeline and the messaging channels (see [Roadmap](#roadmap)).
 
 ## Quick look
 
-One command. Installs whatever is missing (uv, Ollama, the backend, the speech
-engines, ~5 GB of models on first run), then serves the HUD and opens it at
-<http://127.0.0.1:8080>:
+One command from zero to the open HUD — it installs whatever is missing (uv,
+Ollama, the backend, the speech engines, ~5 GB of models on first run), then
+serves the interface at <http://127.0.0.1:8080>:
 
-| Your OS | The command |
-| --- | --- |
-| **Windows** | `scripts\start.bat` — double-click it, or run it in a terminal |
-| **Linux / macOS** | `make start` |
+**Windows** (PowerShell):
+
+```powershell
+git clone https://github.com/JustScriptzz/FinalJarvis.git
+cd FinalJarvis
+scripts\start.bat
+```
+
+**Linux / macOS**:
+
+```bash
+git clone https://github.com/JustScriptzz/FinalJarvis.git
+cd FinalJarvis
+make start
+```
 
 Re-runs are fast: the installer verifies what exists instead of downloading
 again. (Windows details: [docs/windows.md](docs/windows.md).)
