@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+
+# Local runtime state and personal data — never commit
+data/jarvis.db*
+data/runtime/
+data/models/
+data/voices/
+
+# Logs and temp
+*.log
+*.part

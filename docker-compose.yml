@@ -1,0 +1,127 @@
+# ===========================================================================
+# JARVIS infrastructure.
+#
+# The API/agent runs on the host (it needs real OS access for shell, GUI and
+# screen control). This compose file runs the local-first infrastructure:
+# Redis, LiveKit, and optional local model servers.
+#
+#   cp .env.example .env && edit .env
+#   docker compose up -d                       # redis + livekit
+#   docker compose --profile local-llm up -d   # + Ollama
+#   docker compose --profile local-stt up -d   # + Speaches (Faster-Whisper API)
+#   docker compose --profile local-tts up -d   # + Kokoro TTS
+#   docker compose --profile local up -d       # all local AI services
+# ===========================================================================
+name: jarvis
+
+x-restart: &restart
+  restart: unless-stopped
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  redis:
+    <<: [*restart, *logging]
+    image: redis:7.4-alpine
+    container_name: jarvis-redis
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [jarvis-net]
+
+  livekit:
+    <<: [*restart, *logging]
+    image: livekit/livekit-server:${LIVEKIT_VERSION:-v1.13.11}
+    container_name: jarvis-livekit
+    command: ["--config", "/etc/livekit/livekit.yaml"]
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:?Set LIVEKIT_API_SECRET in .env}"
+    ports:
+      - "7880:7880"                 # HTTP / WebSocket signaling
+      - "7881:7881"                 # WebRTC over TCP (fallback)
+      - "50000-50100:50000-50100/udp"  # WebRTC media
+    volumes:
+      - ./infra/livekit/livekit.yaml:/etc/livekit/livekit.yaml:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks: [jarvis-net]
+
+  # -------------------------------------------------------------------------
+  # Optional local model servers. Enable with --profile.
+  # -------------------------------------------------------------------------
+  ollama:
+    <<: [*restart, *logging]
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
+    container_name: jarvis-ollama
+    profiles: [local-llm, local]
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_KEEP_ALIVE: 30m
+      OLLAMA_MAX_LOADED_MODELS: "2"
+      OLLAMA_NUM_PARALLEL: "2"
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    # For NVIDIA GPUs, install nvidia-container-toolkit and uncomment:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+    networks: [jarvis-net]
+
+  # OpenAI-compatible STT/TTS server backed by Faster-Whisper and Kokoro.
+  # Useful as an alternative to the native faster-whisper provider.
+  speaches:
+    <<: [*restart, *logging]
+    image: ghcr.io/speaches-ai/speaches:${SPEACHES_VERSION:-latest-cpu}
+    container_name: jarvis-speaches
+    profiles: [local-stt, local]
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      WHISPER__COMPUTE_TYPE: int8
+    volumes:
+      - speaches-cache:/home/ubuntu/.cache/huggingface
+    networks: [jarvis-net]
+
+  kokoro:
+    <<: [*restart, *logging]
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:${KOKORO_VERSION:-v0.10.0}
+    container_name: jarvis-kokoro
+    profiles: [local-tts, local]
+    ports:
+      - "127.0.0.1:8880:8880"
+    networks: [jarvis-net]
+
+volumes:
+  redis-data:
+  ollama-models:
+  speaches-cache:
+
+networks:
+  jarvis-net:
+    name: jarvis-net

@@ -1,0 +1,92 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jarvis-core"
+version = "0.2.0"
+description = "JARVIS local-first AI assistant: web HUD and hot-swappable model router"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "JARVIS" }]
+dependencies = [
+  "aiosqlite>=0.20.0,<1.0",
+  "fastapi>=0.115.0,<1.0",
+  "httpx>=0.27.2,<1.0",
+  "numpy>=1.26.4,<3.0",
+  "psutil>=6.0.0,<8.0",
+  "pydantic>=2.9.2,<3.0",
+  "python-dotenv>=1.0.1,<2.0",
+  "python-multipart>=0.0.12,<1.0",
+  "PyYAML>=6.0.2,<7.0",
+  "uvicorn[standard]>=0.32.0,<1.0",
+]
+
+[project.scripts]
+jarvis = "jarvis.server.cli:main"
+
+[project.optional-dependencies]
+# Local speech-to-text and text-to-speech. Heavy; install where you run JARVIS.
+local = [
+  "faster-whisper>=1.1.0,<2.0",
+  # faster-whisper passes metadata_errors= to av.open; av 19 dropped that
+  # argument, and the mismatch only surfaces as a TypeError at the first
+  # transcription, so the bound has to be explicit.
+  "av>=11,<19",
+  "piper-tts>=1.2.0,<2.0",
+]
+# Optional local engines. Each pulls large model runtimes.
+parakeet = ["nemo_toolkit[asr]>=2.3.0"]
+# Voice cloning. f5-tts drags in a CUDA build of torch by default; install the
+# CPU wheels from https://download.pytorch.org/whl/cpu first on a machine
+# without an NVIDIA GPU, or pip will pull ~2 GB of CUDA libraries it cannot use.
+# docs/voices.md has the full recipe, including the pins f5-tts needs.
+f5tts = [
+  "f5-tts>=1.1.0",
+  "soundfile>=0.12.1",
+  "cffi>=1.17.0",
+]
+all-local = [
+  "faster-whisper>=1.1.0,<2.0",
+  "av>=11,<19",
+  "piper-tts>=1.2.0,<2.0",
+  "nemo_toolkit[asr]>=2.3.0",
+  "f5-tts>=1.1.0",
+]
+dev = [
+  "mypy>=1.13.0",
+  "pytest>=8.3.3",
+  "pytest-asyncio>=0.24.0",
+  "ruff>=0.7.0",
+  "types-PyYAML>=6.0.12",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jarvis"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC", "RUF"]
+ignore = ["B008"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src/jarvis"]
+plugins = ["pydantic.mypy"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
+ignore_missing_imports = true

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/specification/main/schema/2025-06-18/schema.json",
+  "mcpServers": {
+    "filesystem": {
+      "enabled": false,
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
+      "env": {},
+      "description": "Read/write files inside the JARVIS workspace.",
+      "permission_tier": "CONFIRM"
+    },
+    "fetch": {
+      "enabled": false,
+      "transport": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "env": {},
+      "description": "Fetch and convert web pages for the agent.",
+      "permission_tier": "NOTIFY"
+    }
+  }
+}

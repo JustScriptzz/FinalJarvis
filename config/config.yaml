@@ -1,0 +1,517 @@
+# ===========================================================================
+# JARVIS configuration
+#
+# Every ${VAR} is expanded from the process environment (and from .env).
+#   ${VAR}            -> empty string when unset
+#   ${VAR:-default}   -> default when unset or empty
+#   ${VAR:?message}   -> hard error when unset or empty
+#
+# Model selections made from the dashboard are persisted separately in
+# data/runtime/models.json and override `active` at startup. The YAML file
+# stays the source of truth for provider definitions.
+# ===========================================================================
+
+app:
+  name: JARVIS
+  environment: development          # development | production | test
+  timezone: ${JARVIS_TIMEZONE:-UTC}
+  data_dir: ./data
+  log_level: ${JARVIS_LOG_LEVEL:-INFO}
+  log_json: true
+
+server:
+  host: 127.0.0.1                   # keep loopback unless you put a reverse proxy in front
+  port: 8080
+  public_base_url: http://localhost:8080
+  cors_origins:
+    - http://localhost:3000
+    - http://127.0.0.1:3000
+  api_token: ${JARVIS_API_TOKEN:-}  # empty = no bearer auth; only safe on loopback
+
+database:
+  url: sqlite+aiosqlite:///./data/jarvis.db
+  echo: false
+
+redis:
+  enabled: true
+  url: ${REDIS_URL:-redis://localhost:6379/0}
+  namespace: jarvis
+
+memory:
+  vector_backend: chroma            # chroma (embedded) | qdrant
+  chroma_path: ./data/chroma
+  qdrant_url: ${QDRANT_URL:-http://localhost:6333}
+  collection: jarvis_memory
+  embedding_provider: ollama
+  embedding_model: nomic-embed-text
+  embedding_base_url: ${OLLAMA_HOST:-http://localhost:11434}/v1
+  embedding_dimensions: 768
+
+# ---------------------------------------------------------------------------
+# Model router
+# ---------------------------------------------------------------------------
+models:
+  circuit_breaker:
+    failure_threshold: 5
+    reset_timeout_s: 30
+    half_open_max_calls: 1
+
+  llm:
+    # Provider used in manual mode, and the last resort in smart mode.
+    active: local-qwen
+    routing:
+      mode: smart                   # manual | smart
+      # Smart routing scores each request 0..1 and picks a profile:
+      #   score < fast_threshold       -> fast
+      #   score < escalate_threshold   -> balanced
+      #   otherwise                    -> deep
+      # Disabled or capability-incompatible providers are skipped, then the
+      # chain degrades: deep -> balanced -> fast -> fallback -> active.
+      fast_threshold: 0.32
+      escalate_threshold: 0.62
+      profiles:
+        fast:
+          - local-fast
+        balanced:
+          - local-qwen
+        deep:
+          - anthropic-sonnet
+          - openai-gpt
+          - gemini-pro
+          - openrouter-auto
+          - local-qwen
+      fallback:
+        - local-qwen
+        - local-fast
+
+    providers:
+      # --- Local: any OpenAI-compatible server (Ollama, vLLM, llama.cpp, LM Studio)
+      local-fast:
+        enabled: true
+        type: openai_compatible
+        local: true
+        base_url: ${OLLAMA_HOST:-http://localhost:11434}/v1
+        api_key: ${OLLAMA_API_KEY:-ollama}
+        model: qwen2.5:3b
+        context_window: 32768
+        max_output_tokens: 4096
+        supports_tools: true
+        supports_vision: false
+        supports_json: true
+        timeout_s: 120
+        max_concurrency: 4
+        max_attempts: 2
+        options:
+          max_tokens_field: max_tokens
+        pricing: { input_per_mtok: 0, output_per_mtok: 0 }
+
+      local-qwen:
+        enabled: true
+        type: openai_compatible
+        local: true
+        base_url: ${OLLAMA_HOST:-http://localhost:11434}/v1
+        api_key: ${OLLAMA_API_KEY:-ollama}
+        # qwen2.5:3b is the model present on this machine: it is a 3.1B
+        # Q4_K_M build that fits the available RAM and supports tools. The
+        # "qwen" in the core name is the family, not the parameter count.
+        # For better answers on a bigger machine, pull qwen2.5:7b and change
+        # only this line -- the rest of the core stays valid.
+        model: qwen2.5:3b
+        context_window: 32768
+        max_output_tokens: 8192
+        supports_tools: true
+        supports_vision: false
+        supports_json: true
+        timeout_s: 180
+        max_concurrency: 2
+        max_attempts: 2
+        options:
+          max_tokens_field: max_tokens
+        pricing: { input_per_mtok: 0, output_per_mtok: 0 }
+
+      local-qwen-vl:
+        enabled: false
+        type: openai_compatible
+        local: true
+        base_url: ${OLLAMA_HOST:-http://localhost:11434}/v1
+        api_key: ${OLLAMA_API_KEY:-ollama}
+        model: qwen2.5vl:7b
+        context_window: 32768
+        max_output_tokens: 4096
+        supports_tools: true
+        supports_vision: true
+        supports_json: true
+        timeout_s: 180
+        max_concurrency: 1
+        pricing: { input_per_mtok: 0, output_per_mtok: 0 }
+
+      # --- Cloud
+      openai-gpt:
+        enabled: false
+        type: openai_compatible
+        base_url: https://api.openai.com/v1
+        api_key: ${OPENAI_API_KEY:-}
+        model: gpt-4.1
+        context_window: 1047576
+        max_output_tokens: 32768
+        supports_tools: true
+        supports_vision: true
+        supports_json: true
+        timeout_s: 180
+        max_concurrency: 8
+        pricing: { input_per_mtok: 2.00, output_per_mtok: 8.00 }
+
+      anthropic-sonnet:
+        enabled: false
+        type: anthropic
+        api_key: ${ANTHROPIC_API_KEY:-}
+        api_version: "2023-06-01"
+        model: claude-sonnet-4-5-20250929
+        context_window: 200000
+        max_output_tokens: 16384
+        supports_tools: true
+        supports_vision: true
+        supports_json: false          # Messages API has no response_format
+        timeout_s: 240
+        max_concurrency: 8
+        pricing: { input_per_mtok: 3.00, output_per_mtok: 15.00 }
+
+      gemini-pro:
+        enabled: false
+        type: gemini
+        base_url: https://generativelanguage.googleapis.com/v1beta
+        api_key: ${GEMINI_API_KEY:-}
+        model: gemini-2.5-pro
+        context_window: 1048576
+        max_output_tokens: 32768
+        supports_tools: true
+        supports_vision: true
+        supports_json: true
+        timeout_s: 240
+        max_concurrency: 8
+        pricing: { input_per_mtok: 1.25, output_per_mtok: 10.00 }
+
+      openrouter-auto:
+        enabled: false
+        type: openai_compatible
+        base_url: https://openrouter.ai/api/v1
+        api_key: ${OPENROUTER_API_KEY:-}
+        model: openrouter/auto
+        context_window: 200000
+        max_output_tokens: 16384
+        supports_tools: true
+        supports_vision: true
+        supports_json: true
+        timeout_s: 240
+        max_concurrency: 8
+        headers:
+          HTTP-Referer: http://localhost:3000
+          X-Title: JARVIS
+        pricing: { input_per_mtok: 0, output_per_mtok: 0 }
+
+  stt:
+    active: local-whisper
+    fallback:
+      - openai-whisper
+      - deepgram-nova
+      - groq-whisper
+    providers:
+      local-whisper:
+        enabled: true
+        type: faster_whisper
+        local: true
+        model: large-v3
+        device: auto                 # auto | cpu | cuda
+        compute_type: auto           # auto = int8 on CPU, float16 on CUDA
+        beam_size: 5
+        vad_filter: true
+        language: null               # null = auto-detect
+        timeout_s: 300
+        max_concurrency: 1
+        max_attempts: 1
+        options:
+          download_root: ./data/models/whisper
+        pricing: { per_audio_minute: 0 }
+
+      # NVIDIA Parakeet via NeMo. Enable after: pip install 'jarvis-core[parakeet]'
+      local-parakeet:
+        enabled: false
+        type: parakeet
+        local: true
+        model: nvidia/parakeet-tdt-0.6b-v3
+        language: en
+        device: auto                 # auto | cpu | cuda
+        timeout_s: 300
+        max_concurrency: 1
+        max_attempts: 1
+        options:
+          batch_size: 1
+        pricing: { per_audio_minute: 0 }
+
+      openai-whisper:
+        enabled: false
+        type: openai_compatible
+        base_url: https://api.openai.com/v1
+        api_key: ${OPENAI_API_KEY:-}
+        model: whisper-1
+        timeout_s: 180
+        max_concurrency: 4
+        pricing: { per_audio_minute: 0.006 }
+
+      deepgram-nova:
+        enabled: false
+        type: deepgram
+        base_url: https://api.deepgram.com
+        api_key: ${DEEPGRAM_API_KEY:-}
+        model: nova-3
+        language: null
+        diarize: false
+        timeout_s: 180
+        max_concurrency: 8
+        pricing: { per_audio_minute: 0.0077 }
+
+      groq-whisper:
+        enabled: false
+        type: openai_compatible
+        base_url: https://api.groq.com/openai/v1
+        api_key: ${GROQ_API_KEY:-}
+        model: whisper-large-v3-turbo
+        timeout_s: 120
+        max_concurrency: 8
+        pricing: { per_audio_minute: 0.0009 }
+
+  tts:
+    # J.A.R.V.I.S.'s own voice is the default: a Piper model of the character
+    # voice, which speaks a sentence in a few seconds on CPU. The F5 clone is
+    # kept as an alternative for machines with a GPU, where it is affordable.
+    active: local-jarvis
+    fallback:
+      - local-f5
+      - local-kokoro
+      - openai-tts
+      - elevenlabs
+      - cartesia
+    providers:
+      # Kokoro-FastAPI (or any OpenAI-compatible /v1/audio/speech server:
+      # Chatterbox, Qwen3-TTS, openedai-speech, ...).
+      local-kokoro:
+        enabled: true
+        type: openai_compatible
+        local: true
+        base_url: ${KOKORO_BASE_URL:-http://localhost:8880/v1}
+        api_key: ${KOKORO_API_KEY:-not-needed}
+        model: kokoro
+        voice: af_heart
+        voices: [af_heart, af_bella, af_nicole, am_michael, bm_george]
+        format: wav
+        sample_rate: 24000
+        speed: 1.0
+        timeout_s: 120
+        max_concurrency: 2
+        options:
+          supports_instructions: false
+        pricing: { per_1k_chars: 0 }
+
+      # J.A.R.V.I.S.'s actual voice: a Piper model trained on the character
+      # voice (jgkawell/jarvis on Hugging Face, MIT licensed). British RP,
+      # male, and fast enough to speak in real time on a small CPU.
+      # Fetch the model with backend/scripts/fetch_piper_voice.py.
+      local-jarvis:
+        enabled: true
+        type: piper
+        local: true
+        binary: piper
+        model_path: ./data/models/piper/jarvis-medium.onnx
+        config_path: ./data/models/piper/jarvis-medium.onnx.json
+        sample_rate: 22050
+        format: wav
+        timeout_s: 120
+        max_concurrency: 1
+        options:
+          # This model renders hot and clips at full scale; 0.8 leaves no
+          # clipped samples. length_scale follows the model's own config.
+          volume: 0.8
+          length_scale: 1.15
+        pricing: { per_1k_chars: 0 }
+
+      # J.A.R.V.I.S.'s own voice: F5-TTS cloning a reference clip of him.
+      # The clip and its transcript live in data/voices/ (see docs/voices.md);
+      # cloning needs both, because the model learns timbre from the audio and
+      # alignment from the exact words spoken in it.
+      local-f5:
+        enabled: true
+        type: f5_tts
+        local: true
+        model: F5TTS_v1_Base
+        reference_audio: ./data/voices/jarvis-reference.wav
+        reference_text: >-
+          It's easy to tell the depth of a well. These days a chicken leg is a
+          rare dish.
+        device: cpu
+        format: wav
+        sample_rate: 24000
+        # Measured: ~205 s for a short sentence on a 7-core phone-class ARM
+        # CPU at nfe_step 16. Kept generous because it is the ceiling the HUD's
+        # health probe and request layer see; the in-process engine itself has
+        # no per-call timeout, since a worker thread cannot be interrupted
+        # safely mid-inference.
+        timeout_s: 900
+        max_concurrency: 1
+        options:
+          # Measured here: 8 steps 90 s, 16 steps 203 s, 24 steps 258 s per
+          # sentence. 16 is the balance; the model's own default is 32, which
+          # is only affordable on a GPU.
+          nfe_step: 16
+          cfg_strength: 2.0
+          cross_fade_duration: 0.15
+          remove_silence: true
+          allow_dynamic_reference: false
+        pricing: { per_1k_chars: 0 }
+
+      openai-tts:
+        enabled: false
+        type: openai_compatible
+        base_url: https://api.openai.com/v1
+        api_key: ${OPENAI_API_KEY:-}
+        model: gpt-4o-mini-tts
+        voice: alloy
+        voices: [alloy, ash, ballad, coral, echo, fable, nova, onyx, sage, shimmer]
+        format: wav
+        sample_rate: 24000
+        timeout_s: 120
+        max_concurrency: 8
+        options:
+          supports_instructions: true
+        pricing: { per_1k_chars: 0.0006 }
+
+      elevenlabs:
+        enabled: false
+        type: elevenlabs
+        base_url: https://api.elevenlabs.io
+        api_key: ${ELEVENLABS_API_KEY:-}
+        model: eleven_flash_v2_5
+        voice: 21m00Tcm4TlvDq8ikWAM
+        format: mp3
+        sample_rate: 44100
+        timeout_s: 120
+        max_concurrency: 8
+        options:
+          output_format: mp3_44100_128
+          stability: 0.5
+          similarity_boost: 0.75
+          style: 0.0
+          use_speaker_boost: true
+        pricing: { per_1k_chars: 0.15 }
+
+      cartesia:
+        enabled: false
+        type: cartesia
+        base_url: https://api.cartesia.ai
+        api_key: ${CARTESIA_API_KEY:-}
+        api_version: "2024-06-10"
+        model: sonic-3
+        voice: a0e99841-438c-4a64-b679-ae501e7d6091
+        format: wav
+        sample_rate: 24000
+        language: en
+        timeout_s: 120
+        max_concurrency: 8
+        pricing: { per_1k_chars: 0.03 }
+
+# ---------------------------------------------------------------------------
+# Sections below are consumed by Phases 2-5. They are validated loosely in
+# Phase 1 and tightened as their subsystems land.
+# ---------------------------------------------------------------------------
+telephony:
+  enabled: false
+  livekit:
+    url: ${LIVEKIT_URL:-ws://localhost:7880}
+    api_key: ${LIVEKIT_API_KEY:-devkey}
+    api_secret: ${LIVEKIT_API_SECRET:-}
+  sip:
+    enabled: false
+    trunk_id: ""
+    caller_id: ""
+  twilio:
+    enabled: false
+    account_sid: ${TWILIO_ACCOUNT_SID:-}
+    auth_token: ${TWILIO_AUTH_TOKEN:-}
+    phone_number: ${TWILIO_PHONE_NUMBER:-}
+  outbound:
+    require_confirmation: true
+    max_concurrent_calls: 2
+    default_voice_provider: local-kokoro
+
+channels:
+  email:
+    enabled: false
+    address: ${EMAIL_ADDRESS:-}
+    imap_host: ${EMAIL_IMAP_HOST:-}
+    smtp_host: ${EMAIL_SMTP_HOST:-}
+    auth: oauth2                    # oauth2 | password
+    poll_interval_s: 60
+    urgent_labels: [INBOX]
+  discord:
+    enabled: false
+    token: ${DISCORD_BOT_TOKEN:-}
+    guild_id: ${DISCORD_GUILD_ID:-}
+    voice_channel_id: ${DISCORD_VOICE_CHANNEL_ID:-}
+    respond_in_dms: true
+    respond_when_mentioned: true
+  whatsapp:
+    enabled: false
+    bridge_url: ${WHATSAPP_BRIDGE_URL:-http://localhost:3001}
+    bridge_token: ${WHATSAPP_BRIDGE_TOKEN:-}
+    transcribe_voice_notes: true
+    reply_with_voice: false
+
+permissions:
+  default_tier: NOTIFY              # AUTO | NOTIFY | CONFIRM
+  confirmation_timeout_s: 300
+  tools:
+    time.now: AUTO
+    system.stats: AUTO
+    fs.read: AUTO
+    fs.search: AUTO
+    screen.capture: AUTO
+    clipboard.read: AUTO
+    app.list_windows: AUTO
+    fs.write: NOTIFY
+    clipboard.write: NOTIFY
+    app.launch: NOTIFY
+    app.focus: NOTIFY
+    message.send_routine: NOTIFY
+    shell.exec: CONFIRM
+    shell.exec_sudo: CONFIRM
+    fs.delete: CONFIRM
+    email.send_external: CONFIRM
+    purchase.*: CONFIRM
+    call.outbound: CONFIRM
+
+proactive:
+  enabled: true
+  timezone: ${JARVIS_TIMEZONE:-UTC}
+  tick_interval_s: 15
+  quiet_hours:
+    start: "23:00"
+    end: "07:00"
+  max_outreach_per_hour: 6
+  default_channel: whatsapp
+  escalation:
+    text_then_call_after_s: 900
+    call_on_urgent: true
+
+plugins:
+  mcp:
+    enabled: true
+    config_path: ./config/mcp_servers.json
+    startup_timeout_s: 20
+    tool_prefix: mcp
+  python_plugins_dir: ./plugins
+
+observability:
+  audit_log_retention_days: 365
+  capture_screenshots: true
+  screenshot_dir: ./data/screenshots
+  otel_enabled: false
+  otel_endpoint: ""

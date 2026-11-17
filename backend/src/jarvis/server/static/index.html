@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#03080d" />
+  <meta name="color-scheme" content="dark" />
+  <title>J.A.R.V.I.S. — Neural Interface</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/css/jarvis.css" />
+</head>
+<body data-state="booting">
+  <svg class="svg-defs" aria-hidden="true">
+    <defs>
+      <symbol id="i-reactor" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="2.2" fill="currentColor"/>
+        <circle cx="12" cy="12" r="5.6" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".8"/>
+        <circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width=".8" opacity=".45"/>
+        <path d="M12 1.6v3M12 19.4v3M1.6 12h3M19.4 12h3M4.7 4.7l2.1 2.1M17.2 17.2l2.1 2.1M19.3 4.7l-2.1 2.1M6.8 17.2l-2.1 2.1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity=".7"/>
+      </symbol>
+      <symbol id="i-chip" viewBox="0 0 24 24">
+        <rect x="6" y="6" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <rect x="9.4" y="9.4" width="5.2" height="5.2" rx="1" fill="currentColor" opacity=".65"/>
+        <path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-cpu" viewBox="0 0 24 24">
+        <rect x="5" y="5" width="14" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M9 9h6v6H9zM12 2v3M12 19v3M2 12h3M19 12h3M4.5 4.5 7 7M17 17l2.5 2.5M19.5 4.5 17 7M7 17l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-memory" viewBox="0 0 24 24">
+        <rect x="3.5" y="7" width="17" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M7 7V4.5M11 7V4.5M15 7V4.5M19 7V4.5M7 17v2.5M11 17v2.5M15 17v2.5M19 17v2.5M7 11h10M7 14h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-disk" viewBox="0 0 24 24">
+        <ellipse cx="12" cy="6" rx="7.5" ry="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M4.5 6v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6M4.5 12v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      </symbol>
+      <symbol id="i-wave" viewBox="0 0 24 24">
+        <path d="M3 12h2l2-6 3 12 3-9 2 5 2-3 2 1h2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-mic" viewBox="0 0 24 24">
+        <rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M8.5 21h7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-send" viewBox="0 0 24 24">
+        <path d="M3.5 11.5 20 4l-5 16-3.4-6.1L3.5 11.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="m11.6 13.9 4.2-5.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24">
+        <path d="M4 7h16M9 7V4.5h6V7M6.5 7l.8 13h9.4l.8-13M10 11v5M14 11v5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24">
+        <path d="M4 20h4l10-10a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5 4 20Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="m13.5 7.5 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24">
+        <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-volume" viewBox="0 0 24 24">
+        <path d="M4 9.5h4l5-4v13l-5-4H4v-5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-mute" viewBox="0 0 24 24">
+        <path d="M4 9.5h4l5-4v13l-5-4H4v-5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="m16 9 5 6M21 9l-5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-expand" viewBox="0 0 24 24">
+        <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+      <symbol id="i-terminal" viewBox="0 0 24 24">
+        <rect x="3" y="4.5" width="18" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <path d="m7 9 3 3-3 3M12.5 15H17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-brain" viewBox="0 0 24 24">
+        <path d="M9.5 4.5a3 3 0 0 0-5 2.2 3 3 0 0 0-1 5.6 3 3 0 0 0 2.4 4.7 3 3 0 0 0 3.6 2.5V4.5ZM14.5 4.5a3 3 0 0 1 5 2.2 3 3 0 0 1 1 5.6 3 3 0 0 1-2.4 4.7 3 3 0 0 1-3.6 2.5V4.5Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        <path d="M9.5 9h5M9.5 13h5" stroke="currentColor" stroke-width="1.1" opacity=".6"/>
+      </symbol>
+      <symbol id="i-archive" viewBox="0 0 24 24">
+        <rect x="3.5" y="5" width="17" height="4.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M5.5 9.5V19h13V9.5M9.5 13h5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-power" viewBox="0 0 24 24">
+        <path d="M12 3v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M7 6.2a7.5 7.5 0 1 0 10 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-wake" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="2.1" fill="currentColor" opacity=".85"/>
+        <path d="M8.4 15.6a5.1 5.1 0 0 1 0-7.2M15.6 8.4a5.1 5.1 0 0 1 0 7.2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M5.6 18.4a9 9 0 0 1 0-12.8M18.4 5.6a9 9 0 0 1 0 12.8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity=".55"/>
+      </symbol>
+      <symbol id="i-sliders" viewBox="0 0 24 24">
+        <path d="M4 7h10M18 7h2M4 12h4M12 12h8M4 17h9M17 17h3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="16" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="10" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="15" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <div class="fx-grid" aria-hidden="true"></div>
+  <div class="fx-scan" aria-hidden="true"></div>
+  <div class="fx-vignette" aria-hidden="true"></div>
+  <div class="fx-noise" aria-hidden="true"></div>
+
+  <!-- ================= BOOT ================= -->
+  <section id="boot" class="boot-screen" aria-label="JARVIS boot sequence">
+    <div class="boot-core" aria-hidden="true">
+      <canvas id="bootOrb" class="orb-canvas"></canvas>
+    </div>
+    <div class="boot-copy">
+      <p class="eyebrow">STARK INDUSTRIES · PERSONAL AI DIVISION</p>
+      <h1>J.A.R.V.I.S.</h1>
+      <p class="boot-sub">Just A Rather Very Intelligent System</p>
+      <div id="bootLog" class="boot-log" role="log" aria-live="polite"></div>
+      <div class="boot-progress"><span id="bootBar"></span></div>
+      <div class="boot-foot">
+        <span id="bootStatus">INITIALIZING</span>
+        <button id="bootSkip" class="btn-ghost" type="button">SKIP DIAGNOSTICS</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SETUP ================= -->
+  <section id="setup" class="setup-screen hidden" aria-labelledby="setupTitle">
+    <div class="setup-shell">
+      <header class="setup-header">
+        <div>
+          <p class="eyebrow">CORE CONFIGURATION · NO DEFAULTS</p>
+          <h1 id="setupTitle">Select your neural cores</h1>
+          <p class="setup-lede">
+            J.A.R.V.I.S. does not assume a model. Choose a language core and a voice core
+            explicitly. Local cores keep everything on this machine; cloud cores require
+            credentials in <code>.env</code>. Your choice governs the session — smart
+            routing is one toggle away in the core matrix.
+          </p>
+        </div>
+        <div class="setup-sigil" aria-hidden="true"><svg><use href="#i-reactor"/></svg></div>
+      </header>
+
+      <div class="setup-grid">
+        <section class="setup-section" data-kind="llm">
+          <div class="setup-section-head">
+            <div><span class="section-index">01</span><h2>Language Core</h2></div>
+            <span class="req">REQUIRED</span>
+          </div>
+          <p class="setup-note">Powers reasoning, writing, code and conversation.</p>
+          <div class="filter-row" data-filter-for="llm">
+            <button type="button" class="filter is-active" data-filter="all">ALL</button>
+            <button type="button" class="filter" data-filter="local">LOCAL</button>
+            <button type="button" class="filter" data-filter="cloud">CLOUD</button>
+          </div>
+          <div id="setup-llm" class="setup-list" role="radiogroup" aria-label="Language core"></div>
+        </section>
+
+        <section class="setup-section" data-kind="stt">
+          <div class="setup-section-head">
+            <div><span class="section-index">02</span><h2>Audio Input</h2></div>
+            <span class="optional">OPTIONAL</span>
+          </div>
+          <p class="setup-note">Transcribes your voice. Without it, use the keyboard.</p>
+          <div class="filter-row" data-filter-for="stt">
+            <button type="button" class="filter is-active" data-filter="all">ALL</button>
+            <button type="button" class="filter" data-filter="local">LOCAL</button>
+            <button type="button" class="filter" data-filter="cloud">CLOUD</button>
+          </div>
+          <div id="setup-stt" class="setup-list" role="radiogroup" aria-label="Audio input core"></div>
+        </section>
+
+        <section class="setup-section" data-kind="tts">
+          <div class="setup-section-head">
+            <div><span class="section-index">03</span><h2>Voice Core</h2></div>
+            <span class="req">REQUIRED</span>
+          </div>
+          <p class="setup-note">Gives J.A.R.V.I.S. a voice. Browser speech works offline.</p>
+          <div class="filter-row" data-filter-for="tts">
+            <button type="button" class="filter is-active" data-filter="all">ALL</button>
+            <button type="button" class="filter" data-filter="local">LOCAL</button>
+            <button type="button" class="filter" data-filter="cloud">CLOUD</button>
+          </div>
+          <div id="setup-tts" class="setup-list" role="radiogroup" aria-label="Voice core"></div>
+        </section>
+      </div>
+
+      <footer class="setup-footer">
+        <div id="setupSummary" class="setup-summary">No cores selected.</div>
+        <div class="setup-actions">
+          <button id="setupAddCore" class="btn-ghost" type="button">
+            <svg><use href="#i-plus"/></svg>ADD CORE
+          </button>
+          <button id="setupCancel" class="btn-ghost hidden" type="button">CANCEL</button>
+          <button id="setupEngage" class="btn-engage" type="button" disabled>
+            <span>ENGAGE J.A.R.V.I.S.</span><svg><use href="#i-arrow"/></svg>
+          </button>
+        </div>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ================= ADD CORE ================= -->
+  <div id="addCore" class="modal-scrim hidden" role="dialog" aria-modal="true" aria-labelledby="addCoreTitle">
+    <div class="modal">
+      <header class="modal-head">
+        <div>
+          <p class="eyebrow" id="addCoreKicker">CORE REGISTRY</p>
+          <h2 id="addCoreTitle">Add a core</h2>
+          <p class="modal-lede" id="addCoreLede">
+            Point J.A.R.V.I.S. at any server you run. Probe the endpoint to list what it
+            actually serves, then save the model you want to use.
+          </p>
+        </div>
+        <button id="addCoreClose" class="icon-btn" type="button" aria-label="Close">
+          <svg><use href="#i-close"/></svg>
+        </button>
+      </header>
+
+      <form id="addCoreForm" class="modal-body" autocomplete="off">
+        <div class="field-row">
+          <label class="field">
+            <span>KIND</span>
+            <select id="coreKind" name="kind">
+              <option value="llm">Language core</option>
+              <option value="stt">Audio input</option>
+              <option value="tts">Voice core</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>ID</span>
+            <input id="coreId" name="id" type="text" placeholder="my-vllm" required
+                   pattern="[a-z0-9][a-z0-9._\-]*" spellcheck="false" />
+            <em>Lower-case; used in the matrix and config.</em>
+          </label>
+        </div>
+
+        <label class="field">
+          <span>ENDPOINT</span>
+          <div class="field-inline">
+            <input id="coreUrl" name="base_url" type="text" placeholder="http://192.168.1.9:8000/v1"
+                   spellcheck="false" />
+            <button id="coreProbe" class="btn-ghost" type="button">PROBE</button>
+          </div>
+          <em id="coreProbeNote">OpenAI-compatible <code>/v1</code> or an Ollama port — both are probed.</em>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>MODEL</span>
+            <input id="coreModelInput" name="model" type="text" list="coreModelList"
+                   placeholder="qwen2.5:72b" required spellcheck="false" />
+            <datalist id="coreModelList"></datalist>
+          </label>
+          <label class="field">
+            <span>API KEY <i>OPTIONAL</i></span>
+            <input id="coreKey" name="api_key" type="password" placeholder="stored locally, never shown again"
+                   spellcheck="false" autocomplete="new-password" />
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label class="field">
+            <span>TYPE</span>
+            <select id="coreType" name="type"></select>
+          </label>
+          <label class="field field-compact">
+            <span>CONTEXT</span>
+            <input id="coreContext" name="context_window" type="number" min="256" step="1" placeholder="32768" />
+          </label>
+          <label class="field field-compact">
+            <span>MAX OUT</span>
+            <input id="coreMaxOut" name="max_output_tokens" type="number" min="1" step="1" placeholder="4096" />
+          </label>
+        </div>
+
+        <div id="coreVoiceRow" class="field-row hidden">
+          <label class="field">
+            <span>DEFAULT VOICE</span>
+            <input id="coreVoice" name="voice" type="text" placeholder="af_heart" spellcheck="false" />
+          </label>
+          <label class="field">
+            <span>FORMAT</span>
+            <input id="coreFormat" name="format" type="text" placeholder="wav" spellcheck="false" />
+          </label>
+        </div>
+
+        <div id="coreLocalRow" class="field-row hidden">
+          <label class="field">
+            <span>VOICE MODEL FILE</span>
+            <input id="coreModelPath" name="model_path" type="text"
+                   placeholder="./models/piper/en_US-lessac-medium.onnx" spellcheck="false" />
+            <em>Piper only: path to the <code>.onnx</code> voice on this machine.</em>
+          </label>
+          <label class="field">
+            <span>REFERENCE AUDIO</span>
+            <input id="coreReference" name="reference_audio" type="text"
+                   placeholder="./data/voices/reference.wav" spellcheck="false" />
+            <em>F5-TTS only: a short clip of the voice to clone.</em>
+          </label>
+        </div>
+
+        <div id="coreCaps" class="cap-row">
+          <label class="check"><input id="coreTools" name="supports_tools" type="checkbox" checked /><span>Tools</span></label>
+          <label class="check"><input id="coreVision" name="supports_vision" type="checkbox" /><span>Vision</span></label>
+          <label class="check"><input id="coreJson" name="supports_json" type="checkbox" checked /><span>JSON mode</span></label>
+        </div>
+
+        <div class="cap-row">
+          <label class="check">
+            <input id="coreLocal" name="local" type="checkbox" />
+            <span>Runs on this machine</span>
+          </label>
+          <em class="cap-note">Detected from the endpoint when it is loopback or a private address.</em>
+        </div>
+
+        <p id="coreError" class="field-error hidden" role="alert"></p>
+      </form>
+
+      <footer class="modal-foot">
+        <div class="modal-note" id="coreFootNote">Saved to <code>data/runtime/providers.json</code>.</div>
+        <div class="modal-actions">
+          <button id="addCoreCancel" class="btn-ghost" type="button">CANCEL</button>
+          <button id="addCoreSave" class="btn-engage" type="submit" form="addCoreForm">
+            <span id="addCoreSaveLabel">SAVE CORE</span><svg><use href="#i-arrow"/></svg>
+          </button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ================= TUNING ================= -->
+  <div id="tune" class="modal-scrim hidden" role="dialog" aria-modal="true" aria-labelledby="tuneTitle">
+    <div class="modal modal-tune">
+      <header class="modal-head">
+        <div>
+          <p class="eyebrow">FINE CONTROL · YOUR CHOICE</p>
+          <h2 id="tuneTitle">Tune what runs</h2>
+          <p class="modal-lede" id="tuneLede">
+            Pick the exact model inside your language core, the exact voice behind your
+            voice core, and how J.A.R.V.I.S. speaks. Nothing here is preselected for you.
+          </p>
+        </div>
+        <button id="tuneClose" class="icon-btn" type="button" aria-label="Close">
+          <svg><use href="#i-close"/></svg>
+        </button>
+      </header>
+
+      <div class="modal-body">
+        <nav class="tune-tabs" id="tuneTabs" role="tablist">
+          <button type="button" class="is-active" data-tune-tab="llm" role="tab">LANGUAGE</button>
+          <button type="button" data-tune-tab="tts" role="tab">VOICE</button>
+          <button type="button" data-tune-tab="stt" role="tab">AUDIO INPUT</button>
+        </nav>
+
+        <!-- LANGUAGE -->
+        <section class="tune-panel is-active" data-tune-panel="llm">
+          <div class="tune-core" id="tuneLlmCore"></div>
+
+          <div class="field">
+            <span>MODEL <i>WHAT THE CORE ACTUALLY RUNS</i></span>
+            <div class="pick-row">
+              <select id="tuneLlmModel" class="pick" aria-label="Language model"></select>
+              <button id="tuneLlmReload" class="btn-ghost" type="button" title="Ask the endpoint for its model list">
+                <svg><use href="#i-refresh"/></svg>LIST
+              </button>
+            </div>
+            <em id="tuneLlmModelNote">Read from the endpoint, not the config file.</em>
+          </div>
+
+          <div class="field">
+            <span>OR TYPE A MODEL NAME</span>
+            <input id="tuneLlmModelFree" type="text" placeholder="qwen2.5:14b" spellcheck="false" />
+            <em id="tuneLlmModelFreeHint">Any name the endpoint serves. Empty uses the core's own default.</em>
+          </div>
+
+          <div class="field-row">
+            <label class="field">
+              <span>TEMPERATURE <i id="tuneTempOut">0.65</i></span>
+              <input id="tuneTemp" type="range" min="0" max="2" step="0.01" value="0.65" />
+              <em>Lower is precise, higher is inventive.</em>
+            </label>
+            <label class="field field-compact">
+              <span>MAX TOKENS</span>
+              <input id="tuneMaxTokens" type="number" min="1" max="32768" step="1" placeholder="2048" />
+            </label>
+          </div>
+        </section>
+
+        <!-- VOICE -->
+        <section class="tune-panel" data-tune-panel="tts">
+          <div class="tune-core" id="tuneTtsCore"></div>
+
+          <div class="field">
+            <span>VOICE <i id="tuneVoiceSource">BROWSER SPEECH ENGINE</i></span>
+            <div class="voice-picker" id="tuneVoiceList" role="listbox" aria-label="Voice"></div>
+            <em id="tuneVoiceNote">Click a voice to hear it with the rate and pitch below.</em>
+          </div>
+
+          <div class="field">
+            <span>OR TYPE A VOICE ID</span>
+            <input id="tuneVoiceFree" type="text" placeholder="af_bella" spellcheck="false" />
+            <em id="tuneVoiceFreeHint">For a voice the core owns but does not list.</em>
+          </div>
+
+          <div class="field-row">
+            <label class="field">
+              <span>RATE <i id="tuneRateOut">1.00×</i></span>
+              <input id="tuneRate" type="range" min="0.5" max="2" step="0.01" value="1" />
+            </label>
+            <label class="field">
+              <span>PITCH <i id="tunePitchOut">1.00</i></span>
+              <input id="tunePitch" type="range" min="0.5" max="2" step="0.01" value="1" />
+            </label>
+            <label class="field">
+              <span>SPEED <i id="tuneSpeedOut">1.00×</i></span>
+              <input id="tuneSpeed" type="range" min="0.25" max="4" step="0.01" value="1" />
+            </label>
+          </div>
+          <p class="tune-note" id="tuneDeliveryNote">RATE and PITCH apply to the browser voice; SPEED applies to a server voice core.</p>
+
+          <div class="tune-actions">
+            <button id="tuneTestVoice" class="btn-ghost" type="button">
+              <svg><use href="#i-volume"/></svg><span>TEST THIS VOICE</span>
+            </button>
+            <span id="tuneTestNote" class="tune-test-note"></span>
+          </div>
+        </section>
+
+        <!-- AUDIO INPUT -->
+        <section class="tune-panel" data-tune-panel="stt">
+          <div class="tune-core" id="tuneSttCore"></div>
+          <div class="field-row">
+            <label class="field">
+              <span>TRANSCRIBER MODEL</span>
+              <input id="tuneSttModel" type="text" placeholder="base" spellcheck="false" />
+              <em id="tuneSttModelHint">A model the core also serves. Empty keeps its own.</em>
+            </label>
+            <label class="field field-narrow">
+              <span>LANGUAGE</span>
+              <input id="tuneSttLanguage" type="text" placeholder="en" spellcheck="false" maxlength="12" />
+              <em id="tuneSttLanguageHint">ISO code. Empty auto-detects.</em>
+            </label>
+          </div>
+          <p class="tune-note" id="tuneSttNote"></p>
+        </section>
+      </div>
+
+      <footer class="modal-foot">
+        <div class="modal-note" id="tuneFootNote">Saved to the settings table; survives restarts.</div>
+        <div class="modal-actions">
+          <button id="tuneReset" class="btn-ghost" type="button">RESET TO CORE DEFAULTS</button>
+          <button id="tuneCancel" class="btn-ghost" type="button">CANCEL</button>
+          <button id="tuneSave" class="btn-engage" type="button">
+            <span id="tuneSaveLabel">APPLY</span><svg><use href="#i-arrow"/></svg>
+          </button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ================= APP ================= -->
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark"><svg><use href="#i-reactor"/></svg></div>
+        <div class="brand-copy">
+          <h1>J.A.R.V.I.S.</h1>
+          <p>JUST A RATHER VERY INTELLIGENT SYSTEM</p>
+        </div>
+      </div>
+
+      <div class="top-status">
+        <span class="chip" id="chipCore"><span class="dot ok"></span>CORE ONLINE</span>
+        <span class="chip" id="chipUplink"><span class="dot warn"></span>UPLINK</span>
+        <span class="chip" id="chipMode">MODE · SMART</span>
+        <span class="chip chip-host" id="chipHost">HOST</span>
+      </div>
+
+      <div class="top-right">
+        <div class="clock-block">
+          <span id="clockTime">--:--:--</span>
+          <small id="clockDate">—</small>
+        </div>
+        <button id="audioToggle" class="icon-btn" type="button" title="Toggle audio" aria-pressed="false">
+          <svg><use href="#i-volume"/></svg>
+        </button>
+        <button id="wakeToggle" class="icon-btn wake-btn" type="button" title="Arm the wake word" aria-pressed="false">
+          <svg><use href="#i-wake"/></svg>
+        </button>
+        <button id="openTune" class="icon-btn" type="button" title="Choose model, voice and delivery">
+          <svg><use href="#i-sliders"/></svg>
+        </button>
+        <button id="openSetup" class="icon-btn" type="button" title="Select cores">
+          <svg><use href="#i-chip"/></svg>
+        </button>
+        <button id="fullscreen" class="icon-btn" type="button" title="Fullscreen">
+          <svg><use href="#i-expand"/></svg>
+        </button>
+        <button id="mobileVitals" class="icon-btn mobile-only" type="button" title="Vitals">
+          <svg><use href="#i-cpu"/></svg>
+        </button>
+        <button id="mobileMatrix" class="icon-btn mobile-only" type="button" title="Model matrix">
+          <svg><use href="#i-brain"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- LEFT: VITALS -->
+      <aside id="leftPanel" class="panel panel-left" aria-label="System vitals">
+        <div class="panel-head">
+          <div><span class="eyebrow">HOST TELEMETRY</span><h2>System Vitals</h2></div>
+          <span class="live"><i></i>LIVE</span>
+          <button class="icon-btn drawer-close" type="button" data-close-panel="left" aria-label="Close vitals"><svg><use href="#i-close"/></svg></button>
+        </div>
+
+        <div class="gauge-grid">
+          <div class="gauge" data-gauge="cpu">
+            <svg viewBox="0 0 120 120"><circle class="gauge-track" cx="60" cy="60" r="48"/><circle class="gauge-fill" cx="60" cy="60" r="48"/></svg>
+            <div class="gauge-copy"><strong>0<i>%</i></strong><span>CPU</span></div>
+          </div>
+          <div class="gauge" data-gauge="mem">
+            <svg viewBox="0 0 120 120"><circle class="gauge-track" cx="60" cy="60" r="48"/><circle class="gauge-fill" cx="60" cy="60" r="48"/></svg>
+            <div class="gauge-copy"><strong>0<i>%</i></strong><span>MEM</span></div>
+          </div>
+          <div class="gauge" data-gauge="disk">
+            <svg viewBox="0 0 120 120"><circle class="gauge-track" cx="60" cy="60" r="48"/><circle class="gauge-fill" cx="60" cy="60" r="48"/></svg>
+            <div class="gauge-copy"><strong>0<i>%</i></strong><span>DISK</span></div>
+          </div>
+          <div class="gauge" data-gauge="load">
+            <svg viewBox="0 0 120 120"><circle class="gauge-track" cx="60" cy="60" r="48"/><circle class="gauge-fill" cx="60" cy="60" r="48"/></svg>
+            <div class="gauge-copy"><strong>0<i>.00</i></strong><span>LOAD</span></div>
+          </div>
+        </div>
+
+        <div class="spark-block">
+          <div class="block-head"><span>ACTIVITY</span><span id="netRate">—</span></div>
+          <canvas id="spark" height="64"></canvas>
+          <div class="spark-legend"><span class="lg cpu">CPU</span><span class="lg mem">MEM</span><span id="sparkRange">60s</span></div>
+        </div>
+
+        <div class="cores-block">
+          <div class="block-head"><span>PER-CORE LOAD</span><span id="coreCount">—</span></div>
+          <div id="coreBars" class="core-bars"></div>
+        </div>
+
+        <div class="host-block">
+          <div class="block-head"><span>HOST</span><span id="hostState">NOMINAL</span></div>
+          <dl class="kv">
+            <div><dt>NODE</dt><dd id="hostName">—</dd></div>
+            <div><dt>PLATFORM</dt><dd id="hostPlatform">—</dd></div>
+            <div><dt>ADDRESS</dt><dd id="hostAddress">—</dd></div>
+            <div><dt>MEMORY</dt><dd id="memTotal">—</dd></div>
+            <div><dt>STORAGE</dt><dd id="diskTotal">—</dd></div>
+            <div><dt>UPTIME</dt><dd id="hostUptime">—</dd></div>
+            <div><dt>POWER</dt><dd id="powerState">—</dd></div>
+          </dl>
+        </div>
+
+        <div class="proc-block">
+          <div class="block-head"><span>TOP PROCESSES</span><span>CPU · MEM</span></div>
+          <div id="processList" class="proc-list"></div>
+        </div>
+      </aside>
+
+      <!-- CENTER: CORE + CHAT -->
+      <section class="core-column" aria-label="JARVIS interface">
+        <div class="core-stage" id="coreStage">
+          <div class="stage-grid" aria-hidden="true"></div>
+          <div class="reactor" aria-hidden="true">
+            <canvas id="orb" class="orb-canvas"></canvas>
+          </div>
+          <div class="stage-copy">
+            <p class="eyebrow" id="coreKicker">NEURAL INTERFACE</p>
+            <h2 id="coreState">STANDBY</h2>
+            <p id="coreDetail">Select a core to bring J.A.R.V.I.S. online.</p>
+          </div>
+          <div class="stage-side">
+            <button class="stat stat-btn" id="statCore" type="button" title="Choose the model that runs">
+              <span>ACTIVE CORE</span><strong id="coreModel">—</strong><i>CHANGE</i>
+            </button>
+            <button class="stat stat-btn" id="statVoice" type="button" title="Choose the voice that speaks">
+              <span>VOICE</span><strong id="coreVoiceName">—</strong><i>CHANGE</i>
+            </button>
+            <div class="stat"><span>ROUTING</span><strong id="coreRouting">SMART</strong></div>
+            <div class="stat latency"><span>LATENCY</span><strong id="coreLatency">—</strong></div>
+          </div>
+        </div>
+
+        <div class="chat-shell">
+          <div class="chat-head">
+            <div class="chat-title"><span class="live"><i></i>TRANSCRIPT</span><span id="conversationTitle">Primary Interface</span></div>
+            <div class="chat-actions">
+              <button id="newThread" class="mini-btn" type="button" title="New thread"><svg><use href="#i-plus"/></svg>NEW</button>
+              <button id="openArchive" class="mini-btn mobile-only" type="button" title="Archive"><svg><use href="#i-archive"/></svg>ARCHIVE</button>
+            </div>
+          </div>
+          <div id="chatLog" class="chat-log" aria-live="polite" aria-relevant="additions text"></div>
+
+          <div class="composer">
+            <div class="composer-top">
+              <span id="composerHint" class="composer-hint">Type a directive, or use /help.</span>
+              <button id="composerModel" class="composer-model" type="button"
+                      title="Choose the model that runs">NO CORE</button>
+            </div>
+            <div class="composer-row">
+              <button id="micBtn" class="icon-btn mic" type="button" title="Push to talk" aria-pressed="false">
+                <svg><use href="#i-mic"/></svg>
+              </button>
+              <textarea id="input" rows="1" placeholder="Speak, sir. I am listening." autocomplete="off" spellcheck="false"></textarea>
+              <button id="sendBtn" class="send-btn" type="button" title="Send">
+                <svg><use href="#i-send"/></svg>
+              </button>
+            </div>
+            <div class="suggestions" id="suggestions">
+              <button type="button" data-send="/status">System status</button>
+              <button type="button" data-send="/models">Model matrix</button>
+              <button type="button" data-send="Run a full diagnostic and summarize what is online.">Run diagnostics</button>
+              <button type="button" data-send="What can you do?">Capabilities</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: MATRIX -->
+      <aside id="rightPanel" class="panel panel-right" aria-label="Model matrix and logs">
+        <div class="panel-head">
+          <div><span class="eyebrow">CONTROL PLANE</span><h2>Core Matrix</h2></div>
+          <button class="icon-btn drawer-close" type="button" data-close-panel="right" aria-label="Close matrix"><svg><use href="#i-close"/></svg></button>
+        </div>
+
+        <div class="routing-row">
+          <span>ROUTING</span>
+          <div class="seg" id="routingSeg">
+            <button type="button" data-mode="smart">SMART</button>
+            <button type="button" data-mode="manual">MANUAL</button>
+          </div>
+        </div>
+
+        <div class="tabs" role="tablist">
+          <button class="tab is-active" type="button" data-tab="models" role="tab">MODELS</button>
+          <button class="tab" type="button" data-tab="memory" role="tab">MEMORY</button>
+          <button class="tab" type="button" data-tab="log" role="tab">LOG</button>
+          <button class="tab" type="button" data-tab="archive" role="tab">ARCHIVE</button>
+        </div>
+
+        <div class="tab-panel is-active" data-panel="models">
+          <div class="model-tabs" id="modelTabs">
+            <button type="button" class="is-active" data-kind="llm">LLM</button>
+            <button type="button" data-kind="stt">STT</button>
+            <button type="button" data-kind="tts">TTS</button>
+          </div>
+          <div id="modelList" class="model-list"></div>
+          <button id="tuneFromMatrix" class="wide-btn" type="button"><svg><use href="#i-sliders"/></svg>CHOOSE MODEL &amp; VOICE</button>
+          <button id="addCoreFromMatrix" class="wide-btn" type="button"><svg><use href="#i-plus"/></svg>ADD CORE</button>
+          <button id="refreshHealth" class="wide-btn" type="button"><svg><use href="#i-refresh"/></svg>REFRESH HEALTH</button>
+          <div class="metrics" id="metrics"></div>
+        </div>
+
+        <div class="tab-panel" data-panel="memory">
+          <form id="memoryForm" class="memory-form">
+            <input id="memoryInput" type="text" maxlength="4000" placeholder="Store a long-term fact…" />
+            <button type="submit" class="send-btn" title="Store"><svg><use href="#i-plus"/></svg></button>
+          </form>
+          <div id="memoryList" class="memory-list"></div>
+        </div>
+
+        <div class="tab-panel" data-panel="log">
+          <div class="log-tools">
+            <span>DIAGNOSTIC STREAM</span>
+            <button id="clearLogView" class="link-btn" type="button">CLEAR VIEW</button>
+          </div>
+          <div id="eventList" class="event-list"></div>
+        </div>
+
+        <div class="tab-panel" data-panel="archive">
+          <button id="archiveNew" class="wide-btn" type="button"><svg><use href="#i-plus"/></svg>NEW THREAD</button>
+          <div id="conversationList" class="conversation-list"></div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="statusbar">
+      <div class="status-left">
+        <span class="sb-item"><i id="wsDot" class="dot warn"></i><span id="wsState">CONNECTING</span></span>
+        <span class="sb-item">BOOT <b id="sbBoot">—</b></span>
+        <span class="sb-item">VERSION <b id="sbVersion">0.2.0</b></span>
+      </div>
+      <div class="status-center">
+        <span id="ticker">J.A.R.V.I.S. // Just A Rather Very Intelligent System</span>
+      </div>
+      <div class="status-right">
+        <span class="sb-item">TOKENS <b id="sbTokens">0</b></span>
+        <span class="sb-item">COST <b id="sbCost">$0.0000</b></span>
+        <span class="sb-item">CLIENTS <b id="sbClients">0</b></span>
+        <span class="sb-item">UP <b id="sbUptime">0s</b></span>
+      </div>
+    </footer>
+  </div>
+
+  <div id="toasts" class="toast-stack" aria-live="polite"></div>
+  <div id="drawerScrim" class="drawer-scrim"></div>
+
+  <script src="/js/audio.js" defer></script>
+  <script src="/js/orb.js" defer></script>
+  <script src="/js/app.js" defer></script>
+</body>
+</html>

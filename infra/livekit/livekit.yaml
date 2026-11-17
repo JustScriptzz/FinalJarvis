@@ -1,0 +1,16 @@
+# LiveKit server configuration. Secrets are supplied through LIVEKIT_KEYS.
+port: 7880
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50100
+  # Set true when clients reach this server over the public internet.
+  # LiveKit will discover and advertise the host's external IP.
+  use_external_ip: false
+  # For a LAN deployment behind NAT, pin the advertised address:
+  # node_ip: 192.168.1.10
+redis:
+  address: redis:6379
+logging:
+  level: info
+  json: true
