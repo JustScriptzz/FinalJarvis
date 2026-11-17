@@ -10,6 +10,17 @@ equivalents. It is written for Windows 10/11 64-bit.
 > PowerShell scripts themselves were not executed on a Windows machine. Every
 > command below is also spelled out so nothing depends on the scripts.
 
+## One command
+
+Everything on this page is folded into a single installer:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\install.ps1
+```
+
+It is idempotent, and `-SkipModels` installs the code only. The sections below
+are the same steps spelled out by hand, plus the parts that remain manual.
+
 ## What you need
 
 | Piece | Why | Get it |

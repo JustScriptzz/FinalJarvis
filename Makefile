@@ -7,7 +7,7 @@ PY := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 PYTHONPATH := $(BACKEND)/src
 
-.PHONY: help env infra-up infra-local infra-down infra-logs install install-local serve serve-open test lint format config-check summary models-pull clean
+.PHONY: help env infra-up infra-local infra-down infra-logs bootstrap install install-local serve serve-open test lint format config-check summary models-pull clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -26,6 +26,9 @@ infra-down: ## Stop all containers (keeps volumes)
 
 infra-logs: ## Follow infrastructure logs
 	docker compose logs -f --tail=100
+
+bootstrap: ## One-command full install: uv, Ollama, venv, engines, models
+	./scripts/install.sh
 
 install: ## Create the backend venv and install core + dev dependencies
 	cd $(BACKEND) && uv venv .venv && uv pip install --python .venv/bin/python -e ".[dev]"

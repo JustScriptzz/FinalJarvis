@@ -3,21 +3,25 @@
 Local-first, self-hosted personal AI assistant with a hot-swappable model
 router, realtime voice, omnichannel messaging and full OS control.
 
-**Status: Phase 2 in progress.** Phase 1 delivered the monorepo skeleton,
-infrastructure, configuration system and the complete `ModelRouter`
-(LLM + STT + TTS). Phase 2 adds the self-hosted web application: FastAPI,
-WebSocket streaming, SQLite conversations/memory/events, real host telemetry
-and the JARVIS HUD. MCP tools, the OS controller, the voice pipeline and the
-messaging channels land in Phases 2-4 as specified.
+**What works today:** the self-hosted web HUD with streaming chat, explicit
+local/cloud core selection, hot-swappable LLM/STT/TTS routing with fallback,
+local speech input (Faster-Whisper `large-v3`), the JARVIS voice (Piper, MIT
+licensed) spoken sentence-by-sentence as answers stream in, an optional
+`hey JARVIS` wake word, live host telemetry, slash commands, and a Windows
+port. Still on the roadmap: MCP tools, the OS controller, the LiveKit call
+pipeline and the messaging channels (see [Roadmap](#roadmap)).
 
 ---
 
 ## Quick look
 
 ```bash
-make install
-make serve        # http://127.0.0.1:8080
+./scripts/install.sh      # uv, Ollama, venv, engines, ~5 GB of models — one command
+make serve-open           # http://127.0.0.1:8080
 ```
+
+Windows: `powershell -ExecutionPolicy Bypass -File scripts\install.ps1`, then
+`scripts\start.ps1` (see [docs/windows.md](docs/windows.md)).
 
 On first boot the interface asks you to choose a **language core** and a
 **voice core** explicitly — local or cloud, no defaults.
@@ -37,10 +41,9 @@ protocol and HUD tour.
 
 ```text
                          ┌──────────────────────────────────────────┐
-  Web dashboard          │  FastAPI + WebSocket + async event bus   │
-  Discord / WhatsApp ───▶│  Agent orchestrator (Phase 2)            │
-  Email / SMS            │                                          │
-  WebRTC / SIP ─────────▶│  Voice pipeline (Phase 3)                │
+  Web HUD ──────────────▶│  FastAPI + WebSocket + async event bus   │
+  Discord / WhatsApp  ···│  (roadmap: Phase 4 channels)             │
+  WebRTC / SIP        ···│  (roadmap: Phase 3 voice pipeline)       │
                          └───────────────┬──────────────────────────┘
                                          │
           ┌──────────────────────────────┼──────────────────────────────┐
@@ -104,6 +107,12 @@ jarvis/
 │   ├── windows.md                  # Windows install and PowerShell startup
 │   ├── latency.md                  # measured warm-turn latency and why it was slow
 │   └── web-interface.md            # HTTP API, WebSocket frames, HUD, voice
+├── scripts/
+│   ├── install.sh                  # one-command install (Linux/macOS), idempotent
+│   ├── install.ps1                 # the same for Windows
+│   ├── start-ollama.sh             # Ollama with per-machine threads + engine fix
+│   ├── start-ollama.ps1            # Windows twin
+│   └── start.ps1                   # Windows `make serve` equivalent
 └── backend/
     ├── README.md
     ├── pyproject.toml
@@ -156,25 +165,33 @@ jarvis/
         ├── telemetry.py            # psutil host sampling
         ├── ws.py                   # WebSocket hub + streaming chat
         └── static/                 # HUD: HTML, CSS, JS (no build step)
-    └── tests/
-        ├── conftest.py
-        ├── test_audio.py
-        ├── test_config.py
-        ├── test_custom_store.py
-        ├── test_providers_native.py
-        ├── test_router_audio.py
-        ├── test_router_chat.py
-        └── test_routing.py
+    └── tests/                      # 140 tests: router, audio, config, stores,
+                                    # providers, fetchers, server, chat prompt
 ```
 
 ---
 
-## Quickstart (Phase 1)
+## Quickstart
 
-The commands below are the Linux path. For Windows, follow
-[docs/windows.md](docs/windows.md): the same components with PowerShell
-equivalents (`scripts\start-ollama.ps1`, `scripts\start.ps1`, venv under
-`.venv\Scripts`).
+One command installs everything — uv, Ollama, the backend environment, the
+speech engines and the ~5 GB of model weights:
+
+```bash
+git clone https://github.com/JustScriptzz/FinalJarvis.git
+cd FinalJarvis
+./scripts/install.sh        # Windows: powershell -ExecutionPolicy Bypass -File scripts\install.ps1
+```
+
+It is idempotent (re-running verifies instead of downloading), and
+`./scripts/install.sh --skip-models` installs the code only. Then:
+
+```bash
+make serve-open             # http://127.0.0.1:8080
+```
+
+The numbered steps below are the same install spelled out by hand, for when you
+want to see or change each piece. For Windows specifics see
+[docs/windows.md](docs/windows.md).
 
 ### 1. Environment
 
@@ -186,26 +203,23 @@ openssl rand -hex 32        # put this in LIVEKIT_API_SECRET
 Set cloud keys only for the providers you plan to enable. The API token can
 stay empty while the backend binds to `127.0.0.1`.
 
-### 2. Infrastructure
+### 2. Ollama and models
+
+Install Ollama from <https://ollama.com/download>, start it (or use
+`scripts/start-ollama.sh`, which also picks a sensible thread count), and pull
+the language core:
 
 ```bash
-docker compose up -d redis livekit        # required
-docker compose --profile local up -d      # Ollama + Speaches + Kokoro
+ollama pull qwen2.5:3b        # the shipped local LLM
 ```
 
-Pull the default local models:
-
-```bash
-docker compose exec ollama ollama pull qwen2.5:7b
-docker compose exec ollama ollama pull qwen2.5:3b
-docker compose exec ollama ollama pull nomic-embed-text
-```
-
-Kokoro-FastAPI downloads its voices on first use. Speaches is optional: the
-native `faster_whisper` provider is the default STT path. J.A.R.V.I.S.'s own
-voice (`local-jarvis`, a Piper model of the character voice, MIT licensed) needs
-no service at all — see [docs/voices.md](docs/voices.md) for the model download
-and the CPU install.
+The Docker stack (`docker compose up -d redis livekit`) is **optional** and
+only needed for the Phase 3 call pipeline — the HUD, chat, speech input and
+voices all run host-native with no containers. Speaches and Kokoro in the
+compose `local` profile are optional alternative engines: the native
+`faster_whisper` provider is the shipped STT path, and J.A.R.V.I.S.'s own voice
+(`local-jarvis`, a Piper model of the character voice, MIT licensed) needs no
+service at all — see [docs/voices.md](docs/voices.md).
 
 ### 3. Backend
 
@@ -217,6 +231,8 @@ uv pip install --python .venv/bin/python -e ".[dev]"
 uv pip install --python .venv/bin/python -e ".[local]"
 # speech input weights, one-time (3 GB for the default large-v3):
 PYTHONPATH=src .venv/bin/python -m scripts.fetch_whisper_model --model large-v3
+# the JARVIS voice (63 MB):
+PYTHONPATH=src .venv/bin/python -m scripts.fetch_piper_voice
 ```
 
 `uv` is recommended; a standard `python3.12 -m venv` works too.
@@ -341,7 +357,7 @@ fails five times in a row is circuit-broken for 30 seconds.
   working directory.
 
 Cloud providers ship disabled. Add the key, set `enabled: true`, then either
-switch to them from the dashboard (Phase 5) or pin them in `routing.profiles`.
+switch to them from the HUD's core matrix or pin them in `routing.profiles`.
 
 ---
 
@@ -362,19 +378,22 @@ switch to them from the dashboard (Phase 5) or pin them in `routing.profiles`.
 ## Roadmap
 
 - [x] **Phase 1** — monorepo, compose, config, hot-swappable LLM/STT/TTS router
-- [~] **Phase 2** — FastAPI web server, SQLite conversations/memory/events, host
-  telemetry, HUD, explicit local/cloud core selection. Remaining: MCP loader,
-  Chroma vectors and the OSController
+- [x] **Phase 2** — FastAPI web server, WebSocket streaming, SQLite
+  conversations/memory/events, host telemetry, the HUD, explicit local/cloud
+  core selection, streamed speech, wake word, one-command installer, Windows
+  port. Remaining from the original spec: MCP loader, Chroma vectors and the
+  OSController
 - [ ] **Phase 3** — LiveKit Agents voice pipeline, SIP inbound/outbound, ProactiveEngine
 - [ ] **Phase 4** — Email, Discord text + voice, WhatsApp bridge
-- [ ] **Phase 5** — Mission Control extensions, setup/start scripts
+- [ ] **Phase 5** — Mission Control extensions
 
 ---
 
 ## Troubleshooting
 
-**`LIVEKIT_API_SECRET is required`** — copy `.env.example` to `.env` and set a
-random secret.
+**`LIVEKIT_API_SECRET is required`** — only when running the optional Docker
+stack for the Phase 3 call pipeline: copy `.env.example` to `.env` and set a
+random secret. The host-native HUD never asks for it.
 
 **Ollama returns 404** — pull the model named in `config.yaml`
 (`qwen2.5:3b` is the shipped local model) or change `model` to one you have.
@@ -393,7 +412,8 @@ on any machine.
 engine is re-evaluating the whole prompt instead of reusing its cache:
 
 ```bash
-grep -a "cached n_tokens\|prompt eval time\|  eval time" /tmp/opencode/ollama.log | tail -8
+# the Ollama log: stdout of scripts/start-ollama.sh, or `journalctl -u ollama` under systemd
+grep -a "cached n_tokens\|prompt eval time\|  eval time" <ollama log> | tail -8
 ```
 
 A healthy warm turn shows `cached n_tokens` close to the prompt size and a prompt
