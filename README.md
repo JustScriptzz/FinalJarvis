@@ -183,7 +183,7 @@ opens it:
 ```bash
 git clone https://github.com/JustScriptzz/FinalJarvis.git
 cd FinalJarvis
-make start                  # Windows: powershell -ExecutionPolicy Bypass -File scripts\start.ps1
+make start                  # Linux/macOS — Windows: run scripts\start.bat instead
 ```
 
 Re-runs verify instead of downloading again. `./scripts/install.sh
